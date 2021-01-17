@@ -346,6 +346,10 @@ Resources:
           SslSupportMethod: sni-only
 
 Outputs:
+  ApiId:
+    Description: "Api Gateway ID"
+    Value: !Ref TenantAPI
+
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
     Value: !Sub "https://${TenantAPI}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
