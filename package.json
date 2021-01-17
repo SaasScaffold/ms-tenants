@@ -1,0 +1,37 @@
+{
+  "name": "ms-content",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@bitbucket.org:bidlogix/ms-content.git",
+  "author": "Ralph Lawrence <rlawrence@bidlogix.net>",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/preset-env": "^7.6.3",
+    "aws-sam-webpack-plugin": "^0.6.0",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^7.1.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "jest": "^26.0.1",
+    "standard": "^14.3.1",
+    "webpack": "^5.0.0-beta.13",
+    "webpack-cli": "^4.0.0"
+  },
+  "dependencies": {
+    "@sentry/serverless": "^5.25.0",
+    "aws-sdk": "^2.612.0",
+    "uuid": "^8.3.2"
+  },
+  "scripts": {
+    "build": "webpack-cli",
+    "clean": "rimraf .aws-sam .vscode",
+    "lint": "eslint './*.js' && eslint './**/*.js'",
+    "prebuild": "rimraf .aws-sam .vscode",
+    "prewatch": "rimraf .aws-sam .vscode",
+    "test": "./node_modules/.bin/jest --coverage",
+    "watch": "webpack-cli -w"
+  }
+}

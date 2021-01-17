@@ -1,0 +1,89 @@
+image:
+  name: bidlogixteam/utility-docker-node-awscli:38
+  username: $DOCKER_USERNAME
+  password: $DOCKER_PASSWORD
+
+definitions:
+  caches:
+    sonar: ~/.sonar/cache  # Caching SonarCloud artifacts will speed up your build
+  steps:
+    - step: &lint-test-scan
+        name: "Lint, Test and Scan"
+        caches:
+          - node
+          - sonar
+        script:
+          - git fetch origin "+refs/heads/*:refs/remotes/origin/*"
+          - yarn
+          - yarn lint
+          # - yarn test --coverage
+          # - pipe: sonarsource/sonarcloud-scan:1.1.0
+          #   variables:
+          #     SONAR_TOKEN: ${SONAR_TOKEN}
+        artifacts:
+          - node_modules/**
+    - step: &DeployAwsStaging
+        name: AWS SAM - Deploy Branch
+        trigger: manual
+        script:
+          - SAFE_BRANCH_NAME="$(echo ${BITBUCKET_BRANCH#feature/} | awk '{ print tolower($1) }')"
+          - NODE_ENV=production SENTRY_DSN=$SENTRY_DSN yarn build
+          - |
+            for REGION in ${AUCTIONPROJECT_STAGING_REGIONS//,/ };
+            do
+              sam deploy \
+                --s3-bucket zj-cloudformation-templates \
+                --region $REGION \
+                --stack-name "$SAFE_BRANCH_NAME-tenants" \
+                --capabilities CAPABILITY_NAMED_IAM \
+                --no-fail-on-empty-changeset \
+                --parameter-overrides \
+                    ApiGatewayStageName="staging" \
+                    IsProduction="false"
+              API_ID=$(aws cloudformation describe-stacks --stack-name $SAFE_BRANCH_NAME-tenants --query 'Stacks[].Outputs[?OutputKey==`ApiId`].[OutputValue]' --output text --region $REGION)
+              aws apigatewayv2 create-deployment --api-id $API_ID --stage-name staging --description "Bitbucket pipeline $BITBUCKET_BUILD_NUMBER" --region $REGION
+              if [[ "$SAFE_BRANCH_NAME" == "develop" ]]
+              then
+                aws cloudformation --region $REGION update-termination-protection --stack-name "develop-tenants" --enable-termination-protection
+              fi
+            done
+    - step: &DeployAwsProduction
+        name: Cloudformation - Deploy Production
+        script:
+          - NODE_ENV=production SENTRY_DSN=$SENTRY_DSN yarn build
+          - |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID && \
+              aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY && \
+              aws configure set default.region $AWS_DEFAULT_REGION && \
+              aws configure set source_profile default --profile $AWS_CLI_PRODUCTION_PROFILE && \
+              aws configure set role_arn $AWS_CI_PROD_ACCESS_ROLE_ARN --profile $AWS_CLI_PRODUCTION_PROFILE
+          - |
+            for REGION in ${REGIONS//,/ };
+            do
+              sam deploy \
+                --s3-bucket $AWS_LAMBDA_S3_BUCKET_PROD-$REGION \
+                --profile $AWS_CLI_PRODUCTION_PROFILE \
+                --region $REGION \
+                --stack-name "content" \
+                --capabilities CAPABILITY_NAMED_IAM \
+                --no-fail-on-empty-changeset \
+                --parameter-overrides \
+                    ApiGatewayStageName="production" \
+                    IsProduction="true" \
+                    AuctionEventsTopicArn=$AUCTION_EVENTS_TOPIC_ARN \
+                    BidEventsTopicArn=$BID_EVENTS_TOPIC_ARN
+              aws cloudformation --region $REGION update-termination-protection --stack-name "content" --enable-termination-protection --profile $AWS_CLI_PRODUCTION_PROFILE
+              API_ID=$(aws cloudformation describe-stacks --stack-name content --query 'Stacks[].Outputs[?OutputKey==`ApiId`].[OutputValue]' --output text --region $REGION --profile $AWS_CLI_PRODUCTION_PROFILE)
+              aws apigatewayv2 create-deployment --api-id $API_ID --stage-name production --description "Bitbucket pipeline $BITBUCKET_BUILD_NUMBER" --profile $AWS_CLI_PRODUCTION_PROFILE  --region $REGION
+              API_ID=$(aws cloudformation describe-stacks --stack-name content --query 'Stacks[].Outputs[?OutputKey==`AdminApiId`].[OutputValue]' --output text --region $REGION --profile $AWS_CLI_PRODUCTION_PROFILE)
+              aws apigatewayv2 create-deployment --api-id $API_ID --stage-name production --description "Bitbucket pipeline $BITBUCKET_BUILD_NUMBER" --profile $AWS_CLI_PRODUCTION_PROFILE --region $REGION
+            done
+
+pipelines:
+  branches:
+    '{develop,feature/*,release/*,hotfix/*,bug/*}':
+      - step: *lint-test-scan
+      - step: *DeployAwsStaging
+    master:
+      - step: *lint-test-scan
+      - step: *DeployAwsProduction

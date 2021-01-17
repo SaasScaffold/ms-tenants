@@ -1,0 +1,351 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  ms-content
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  ApiGatewayStageName:
+    Description: The name of the stage to which this Api Gateway will be deployed
+    Type: String
+    AllowedPattern: .+
+    Default: staging
+  IsProduction:
+    Description: Whether this is a production stack
+    Default: false
+    Type: String
+    AllowedValues: [true, false]
+
+Conditions:
+  IsProduction: !Equals [!Ref IsProduction, "true"]
+
+Mappings:
+  ProductionMap:
+    eu-west-2:
+      HostedZone: bidmountain.com.
+      ACM: arn:aws:acm:us-east-1:221022921856:certificate/463f256f-5d74-4257-9e1a-18fa797ca411
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  TenantAPI:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Join ["-", [!Ref "AWS::StackName", api]]
+      ProtocolType: HTTP
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - listTenantsRoute
+      - getTenantRoute
+      - updateTenantRoute
+      - createTenantRoute
+    Properties:
+      ApiId: !Ref TenantAPI
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: !Ref ApiGatewayStageName
+      Description: Prod Stage
+      DeploymentId: !Ref Deployment
+      ApiId: !Ref TenantAPI
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  listTenantsRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TenantAPI
+      RouteKey: GET /
+      AuthorizationType: NONE
+      OperationName: listTenantsRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref listTenantsIntegration
+  listTenantsIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      PayloadFormatVersion: '2.0'
+      ApiId: !Ref TenantAPI
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${listTenantsFunction.Arn}/invocations
+  listTenantsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: listTenants.handler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 5
+      Description: Lists the tenants
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the TenantTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TenantTable
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+          # Make table name accessible as environment variable from function code during execution
+          TENANT_TABLE: !Ref TenantTable
+  listTenantsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref listTenantsFunction
+      Principal: apigateway.amazonaws.com
+
+  getTenantRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TenantAPI
+      RouteKey: GET /{tenantUuid}
+      AuthorizationType: NONE
+      OperationName: getTenantRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref getTenantIntegration
+  getTenantIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      PayloadFormatVersion: '2.0'
+      ApiId: !Ref TenantAPI
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${getTenantFunction.Arn}/invocations
+  getTenantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: getTenant.handler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 5
+      Description: Gets the specified tenant
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the TenantTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TenantTable
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+          # Make table name accessible as environment variable from function code during execution
+          TENANT_TABLE: !Ref TenantTable
+  getTenantPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref getTenantFunction
+      Principal: apigateway.amazonaws.com
+
+  updateTenantRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TenantAPI
+      RouteKey: PATCH /{tenantUuid}
+      AuthorizationType: NONE
+      OperationName: updateTenantRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref updateTenantIntegration
+  updateTenantIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      PayloadFormatVersion: '2.0'
+      ApiId: !Ref TenantAPI
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${updateTenantFunction.Arn}/invocations
+  updateTenantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: updateTenant.handler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 5
+      Description: Lists the default content keys and values for the specified namespace
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the TenantTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TenantTable
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+          # Make table name accessible as environment variable from function code during execution
+          TENANT_TABLE: !Ref TenantTable
+  updateTenantPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref updateTenantFunction
+      Principal: apigateway.amazonaws.com
+
+  createTenantRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref TenantAPI
+      RouteKey: POST /
+      AuthorizationType: NONE
+      OperationName: createTenantRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref createTenantIntegration
+  createTenantIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      PayloadFormatVersion: '2.0'
+      ApiId: !Ref TenantAPI
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${createTenantFunction.Arn}/invocations
+  createTenantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: createTenant.handler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 5
+      Description: Creates a tenant
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the TenantTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TenantTable
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+          # Make table name accessible as environment variable from function code during execution
+          TENANT_TABLE: !Ref TenantTable
+  createTenantPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref createTenantFunction
+      Principal: apigateway.amazonaws.com
+
+  TenantTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "uuid"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "uuid"
+          KeyType: "HASH"
+      BillingMode: PAY_PER_REQUEST
+      TableName: !Join ["-", [!Ref "AWS::StackName", "tenant-table"]]
+
+  DNSRecordIPV4:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt [CloudfrontDistribution, DomainName]
+        HostedZoneId: Z2FDTNDATAQYW2
+      HostedZoneName: !FindInMap [ProductionMap, !Ref "AWS::Region", HostedZone]
+      Name:
+        !Join [
+          ".",
+          [
+            !Ref "AWS::StackName",
+            "bidmountain.com",
+          ],
+        ]
+      Type: A
+
+  DNSRecordIPV6:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt [CloudfrontDistribution, DomainName]
+        HostedZoneId: Z2FDTNDATAQYW2
+      HostedZoneName: !FindInMap [ProductionMap, !Ref "AWS::Region", HostedZone]
+      Name:
+        !Join [
+          ".",
+          [
+            !Ref "AWS::StackName",
+            "bidmountain.com",
+          ],
+        ]
+      Type: AAAA
+
+  CloudfrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Join ["", [!Ref "AWS::StackName", " Cloud Front"]]
+        Origins:
+          - Id: APIGOrigin
+            DomainName:
+              !Join [
+                "",
+                [
+                  !Ref TenantAPI,
+                  ".execute-api.",
+                  !Ref AWS::Region,
+                  ".amazonaws.com",
+                ],
+              ]
+            OriginPath: !Sub /${ApiGatewayStageName}
+            CustomOriginConfig:
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        HttpVersion: http2
+        DefaultCacheBehavior:
+          AllowedMethods:
+            ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+          CachedMethods: ["GET", "HEAD", "OPTIONS"]
+          ForwardedValues:
+            Headers:
+              - Access-Control-Request-Headers
+              - Access-Control-Request-Method
+              - Origin
+              - Authorization
+              - Accept
+            # - Host APIG needs to use SNI
+            QueryString: true
+          TargetOriginId: APIGOrigin
+          ViewerProtocolPolicy: https-only
+          Compress: true
+          DefaultTTL: 0
+        Enabled: true
+        IPV6Enabled: true
+        Aliases:
+          - !Join [
+              ".",
+              [
+                !Ref "AWS::StackName",
+                "bidmountain.com",
+              ],
+            ]
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn:
+            !FindInMap [ProductionMap, !Ref "AWS::Region", ACM]
+          MinimumProtocolVersion: TLSv1.2_2019
+          SslSupportMethod: sni-only
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${TenantAPI}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
