@@ -1,13 +1,13 @@
 {
-  "name": "ms-content",
+  "name": "ms-tenants",
   "version": "1.0.0",
   "main": "index.js",
   "repository": "git@bitbucket.org:bidlogix/ms-content.git",
-  "author": "Ralph Lawrence <rlawrence@bidlogix.net>",
+  "author": "Ralph Lawrence <ralph@zerojargon.com>",
   "license": "MIT",
   "devDependencies": {
     "@babel/preset-env": "^7.6.3",
-    "aws-sam-webpack-plugin": "^0.6.0",
+    "aws-sam-webpack-plugin": "^0.7.0",
     "babel-preset-env": "^1.6.1",
     "eslint": "^7.1.0",
     "eslint-config-standard": "^16.0.2",

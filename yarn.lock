@@ -1563,12 +1563,12 @@ atob@^2.1.2:
   resolved "https://registry.yarnpkg.com/atob/-/atob-2.1.2.tgz#6d9517eb9e030d2436666651e86bd9f6f13533c9"
   integrity sha512-Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==
 
-aws-sam-webpack-plugin@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/aws-sam-webpack-plugin/-/aws-sam-webpack-plugin-0.6.0.tgz#f373c504c05f8fc7864700fdbd4d388fa71dc610"
-  integrity sha512-G28eJAnofMasTJsgCxuRcsPwk2Ncna41xKVtmhDCUblHTOKsPxkfW2Pp6CC15oX6cvtgwog5HG6Evg8sPs+A6w==
+aws-sam-webpack-plugin@^0.7.0:
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/aws-sam-webpack-plugin/-/aws-sam-webpack-plugin-0.7.0.tgz#a235b9876ba5659599d6e0c4d035eed8f6238e69"
+  integrity sha512-mXxrospAf9+nmHeaKuqvJHAj3Uztuap5ERaUZO6BZKbZARwKfI+EwGnpPJEA2MovUosQ41Cnlt5ya+Q6BxPyBQ==
   dependencies:
-    js-yaml "^3.13.1"
+    js-yaml "^3.14.0"
     yaml-cfn "^0.2.3"
 
 aws-sdk@^2.612.0:
@@ -4258,7 +4258,7 @@ js-tokens@^3.0.2:
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-3.0.2.tgz#9866df395102130e38f7f996bceb65443209c25b"
   integrity sha1-mGbfOVECEw449/mWvOtlRDIJwls=
 
-js-yaml@^3.10.0, js-yaml@^3.13.1:
+js-yaml@^3.10.0, js-yaml@^3.13.1, js-yaml@^3.14.0:
   version "3.14.1"
   resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-3.14.1.tgz#dae812fdb3825fa306609a8717383c50c36a0537"
   integrity sha512-okMH7OXXJ7YrN9Ok3/SXrnu4iX9yOk+25nqX4imS2npuvTYDmo/QEZoqwZkYaIDk3jVvBOTOIEgEhaLOynBS9g==
