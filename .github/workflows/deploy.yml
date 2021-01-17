@@ -10,6 +10,9 @@ jobs:
       env-name: ${{ steps.env-name.outputs.environment }}
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '12'
       - name: Install Dependencies with Apt Get
         run: |
           sudo apt-get update
@@ -43,6 +46,7 @@ jobs:
           echo "The branch is $SAFE_BRANCH_NAME"
       - name: SAM Build
         run: |
+          yarn
           NODE_ENV=production yarn build
       - name: SAM Deploy
         run: |
