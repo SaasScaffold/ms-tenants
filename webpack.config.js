@@ -37,13 +37,6 @@ module.exports = {
   // Set the webpack mode
   mode: process.env.NODE_ENV || "production",
 
-  // Add the TypeScript loader
-  module: {
-    rules: [
-      { test: /\.jsx?$/, loader: "babel-loader" }
-    ]
-  },
-
   // Add the AWS SAM Webpack plugin
   plugins: [awsSamPlugin]
 }
