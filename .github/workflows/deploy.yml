@@ -50,16 +50,6 @@ jobs:
           NODE_ENV=production yarn build
       - name: SAM Deploy
         run: |
-          # Create S3 Bucket to store code
-          aws s3 mb s3://${{ steps.vars.outputs.environment }}
-          # Run SAM Deploy
-          sam deploy --template-file .aws-sam/build/template.yaml \
-            --stack-name ${{ steps.vars.outputs.environment }} \
-            --s3-bucket ${{ steps.vars.outputs.environment }} \
-            --parameter-overrides \
-              'ParameterKey=Name,ParameterValue=example \
-              ParameterKey=Version,ParameterValue=${{ steps.vars.outputs.version }}' \
-            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
           sam deploy \
             --s3-bucket zj-cloudformation-templates \
             --region ${{ steps.vars.outputs.region }} \
