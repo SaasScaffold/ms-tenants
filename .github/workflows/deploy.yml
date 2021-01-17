@@ -52,7 +52,7 @@ jobs:
         run: |
           sam deploy \
             --s3-bucket zj-cloudformation-templates \
-            --region ${{ steps.vars.outputs.region }} \
+            --region ${{ secrets.AWS_REGION }} \
             --stack-name "${{ steps.vars.outputs.branch }}-tenants" \
             --capabilities CAPABILITY_NAMED_IAM \
             --no-fail-on-empty-changeset \
@@ -60,4 +60,4 @@ jobs:
                 ApiGatewayStageName="staging" \
                 IsProduction="true"
           API_ID=$(aws cloudformation describe-stacks --stack-name ${{ steps.vars.outputs.branch }}-tenants --query 'Stacks[].Outputs[?OutputKey==`ApiId`].[OutputValue]' --output text --region ${{ steps.vars.outputs.branch }})
-          aws apigatewayv2 create-deployment --api-id $API_ID --stage-name staging --description "Github actions ${{ github.run_id }}" --region ${{ steps.vars.outputs.region }}
+          aws apigatewayv2 create-deployment --api-id $API_ID --stage-name staging --description "Github actions ${{ github.run_id }}" --region ${{ secrets.AWS_REGION }}
