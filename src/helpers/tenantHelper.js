@@ -46,6 +46,6 @@ exports.createTenant = async (name) => {
       uuid
     }
   }
-  const createdTenant = await ddb.get(getParams).promise()
-  return createdTenant
+  const createdTenantRecord = await ddb.get(getParams).promise()
+  return createdTenantRecord.Item
 }
