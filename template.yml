@@ -53,10 +53,25 @@ Resources:
   Stage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
+      AutoDeploy: true
       StageName: !Ref ApiGatewayStageName
       Description: Prod Stage
       DeploymentId: !Ref Deployment
       ApiId: !Ref TenantAPI
+
+  TenantAPIAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref TenantAPI
+      AuthorizerType: JWT
+      IdentitySource:
+        - "$request.header.Authorization"
+      JwtConfiguration:
+        Audience:
+          - 4b6hnobvrsdc6dko4248tdhnj0
+        Issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/eu-west-2_NS5jl6y5U"
+      Name: JwtAuthorizer
+
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
   listTenantsRoute:
@@ -64,7 +79,8 @@ Resources:
     Properties:
       ApiId: !Ref TenantAPI
       RouteKey: GET /
-      AuthorizationType: NONE
+      AuthorizationType: JWT
+      AuthorizerId: !Ref TenantAPIAuthorizer
       OperationName: listTenantsRoute
       Target: !Join
         - '/'
