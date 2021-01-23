@@ -1,6 +1,6 @@
 const handler = async (event) => {
   if (event.requestContext.http.method !== 'GET') {
-    throw new Error(`listContentByNamespace only accept GET method, you tried: ${event.requestContext.http.method}`)
+    throw new Error(`updateTenant only accept GET method, you tried: ${event.requestContext.http.method}`)
   }
   // All log statements are written to CloudWatch
   console.info('received:', event)
