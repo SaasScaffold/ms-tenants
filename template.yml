@@ -163,7 +163,7 @@ Resources:
       ApiId: !Ref TenantAPI
       RouteKey: PATCH /{tenantUuid}
       AuthorizationType: !If [HasTenantUpdateAuth, JWT, None]
-      AuthorizerId: !If [HasTenantUpdateAuth, !Ref AuthTenantUpdate, AWS::NoValue]
+      AuthorizerId: !If [HasTenantUpdateAuth, !Ref AuthTenantUpdate, !Ref AWS::NoValue]
       OperationName: updateTenantRoute
       Target: !Join
         - '/'
