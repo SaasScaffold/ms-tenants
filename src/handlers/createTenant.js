@@ -1,5 +1,5 @@
 const { createTenant } = require('../helpers/tenantHelper')
-const { putEvent } = require('../helpers/queueHelper')
+const { putEvent } = require('../helpers/eventHelper')
 
 const handler = async (event) => {
   // All log statements are written to CloudWatch
