@@ -56,7 +56,6 @@ Resources:
       AutoDeploy: true
       StageName: !Ref ApiGatewayStageName
       Description: Prod Stage
-      DeploymentId: !Ref Deployment
       ApiId: !Ref TenantAPI
 
   TenantAPIAuthorizer:
