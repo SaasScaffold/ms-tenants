@@ -23,8 +23,13 @@ Parameters:
     Default: false
     Type: String
     AllowedValues: [true, false]
+  AuthTenantUpdate:
+    Description: Authorizer for Update Tenant
+    Default: false
+    Type: String
 
 Conditions:
+  HasTenantUpdateAuth: !Not [!Equals [!Ref AuthTenantUpdate, false]]
   IsProduction: !Equals [!Ref IsProduction, "true"]
 
 Mappings:
@@ -57,19 +62,6 @@ Resources:
       StageName: !Ref ApiGatewayStageName
       Description: Prod Stage
       ApiId: !Ref TenantAPI
-
-  TenantAPIAuthorizer:
-    Type: AWS::ApiGatewayV2::Authorizer
-    Properties:
-      ApiId: !Ref TenantAPI
-      AuthorizerType: JWT
-      IdentitySource:
-        - "$request.header.Authorization"
-      JwtConfiguration:
-        Audience:
-          - 4b6hnobvrsdc6dko4248tdhnj0
-        Issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/eu-west-2_NS5jl6y5U"
-      Name: JwtAuthorizer
 
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -170,8 +162,8 @@ Resources:
     Properties:
       ApiId: !Ref TenantAPI
       RouteKey: PATCH /{tenantUuid}
-      AuthorizationType: JWT
-      AuthorizerId: !Ref TenantAPIAuthorizer
+      AuthorizationType: !If [HasTenantUpdateAuth, JWT, None]
+      AuthorizerId: !If [HasTenantUpdateAuth, !Ref AuthTenantUpdate, AWS::NoValue]
       OperationName: updateTenantRoute
       Target: !Join
         - '/'
@@ -217,8 +209,7 @@ Resources:
     Properties:
       ApiId: !Ref TenantAPI
       RouteKey: POST /
-      AuthorizationType: JWT
-      AuthorizerId: !Ref TenantAPIAuthorizer
+      AuthorizationType: None
       OperationName: createTenantRoute
       Target: !Join
         - '/'
@@ -361,11 +352,55 @@ Resources:
           MinimumProtocolVersion: TLSv1.2_2019
           SslSupportMethod: sni-only
 
+  TenantEventsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Join ["-", [!Ref "AWS::StackName", "tenant-events"]]
+
+  TenantEventsTopicPolicy:
+      Type: AWS::SNS::TopicPolicy
+      Properties:
+        Topics:
+          - !Ref TenantEventsTopic
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: allow-sns
+            Effect: Allow
+            Principal: '*'
+            Action:
+              - SNS:Publish
+              - SNS:RemovePermission
+              - SNS:SetTopicAttributes
+              - SNS:DeleteTopic
+              - SNS:ListSubscriptionsByTopic
+              - SNS:GetTopicAttributes
+              - SNS:Receive
+              - SNS:AddPermission
+              - SNS:Subscribe
+            Resource: "*"
+
 Outputs:
   ApiId:
     Description: "Api Gateway ID"
     Value: !Ref TenantAPI
 
+  TenantEventsTopicArn:
+    Description: "Tenant Events Topic ARN"
+    Value: !Ref TenantEventsTopic
+
+  TenantEventsTopicName:
+    Description: "Tenant Events Topic Name"
+    Value: !GetAtt TenantEventsTopic.TopicName
+
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${TenantAPI}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+    Value: !Join [
+       "",
+      [
+        !Ref TenantAPI,
+        ".execute-api.",
+        !Ref AWS::Region,
+        ".amazonaws.com",
+      ],
+    ]
