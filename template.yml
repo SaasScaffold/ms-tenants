@@ -242,6 +242,7 @@ Resources:
         Variables:
           AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
           # Make table name accessible as environment variable from function code during execution
+          SNS_TOPIC: !Ref TenantEventsTopic
           TENANT_TABLE: !Ref TenantTable
   createTenantPermission:
     Type: AWS::Lambda::Permission
