@@ -14,7 +14,7 @@ const handler = async (event) => {
   const eventToBroadcast = JSON.stringify({
     action: 'TENANT_CREATED',
     data: {
-      tenant: createTenant
+      tenant: createdTenant
     }
   })
 
