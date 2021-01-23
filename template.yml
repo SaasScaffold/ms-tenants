@@ -29,7 +29,7 @@ Parameters:
     Type: String
 
 Conditions:
-  HasTenantUpdateAuth: !Not [!Equals [!Ref AuthTenantUpdate, false]]
+  HasTenantUpdateAuth: !Not [!Equals [!Ref AuthTenantUpdate, "false"]]
   IsProduction: !Equals [!Ref IsProduction, "true"]
 
 Mappings:
