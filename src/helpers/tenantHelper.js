@@ -8,7 +8,7 @@ const ddb = new DocumentClient({ apiVersion: '2012-08-10', region: process.env.A
 exports.listTenants = async () => {
   const params = {
     TableName: TENANT_TABLE,
-    AttributesToGet: ['uuid']
+    AttributesToGet: ['uuid', 'name']
   }
   const data = await ddb.scan(params).promise()
   return data.Items
@@ -18,7 +18,7 @@ exports.getTenant = async (uuid) => {
   const params = {
     TableName: TENANT_TABLE,
     Key: {
-      uuid
+      uuid,
     }
   }
   const tenant = await ddb.get(params).promise()
@@ -27,14 +27,15 @@ exports.getTenant = async (uuid) => {
   return tenant
 }
 
-exports.createTenant = async (name) => {
+exports.createTenant = async (name, adminEmail) => {
   const uuid = uuidv4()
 
   const params = {
     TableName: TENANT_TABLE,
     Item: {
       uuid,
-      name
+      name,
+      adminEmail
     },
   }
 

@@ -8,8 +8,8 @@ const handler = async (event) => {
     throw new Error(`createTenant only accept POST method, you tried: ${event.requestContext.http.method}`)
   }
 
-  const { name } = JSON.parse(event.body)
-  const createdTenant = await createTenant(name)
+  const { name, adminEmail } = JSON.parse(event.body)
+  const createdTenant = await createTenant(name, adminEmail)
 
   const eventToBroadcast = JSON.stringify({
     action: 'TENANT_CREATED',
