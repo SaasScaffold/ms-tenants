@@ -182,7 +182,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref ApiGatewayID
-      RouteKey: POST /tenants/
+      RouteKey: POST /tenants
       AuthorizationType: None
       OperationName: createTenantRoute
       Target: !Join
