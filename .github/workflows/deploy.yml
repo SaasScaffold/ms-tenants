@@ -38,9 +38,24 @@ jobs:
           # Set variables
           BRANCH=${REF#refs/heads/}
           SAFE_BRANCH_NAME="$(echo ${BRANCH#feature/} | awk '{ print tolower($1) }')"
+          API_GATEWAY_ID=$( \
+            aws cloudformation describe-stacks --stack-name $SAFE_BRANCH_NAME-infrastructure --query 'Stacks[].Outputs[?OutputKey==`ApiId`].[OutputValue]' --output text --region ${{ secrets.AWS_REGION }} \
+            || aws cloudformation describe-stacks --stack-name develop-infrastructure --query 'Stacks[].Outputs[?OutputKey==`ApiId`].[OutputValue]' --output text --region ${{ secrets.AWS_REGION }} \
+          )
+          TENANTS_TOPIC_ARN=$( \
+            aws cloudformation describe-stacks --stack-name $SAFE_BRANCH_NAME-infrastructure --query 'Stacks[].Outputs[?OutputKey==`TenantEventsTopicArn`].[OutputValue]' --output text --region ${{ secrets.AWS_REGION }} \
+            || aws cloudformation describe-stacks --stack-name develop-infrastructure --query 'Stacks[].Outputs[?OutputKey==`TenantEventsTopicArn`].[OutputValue]' --output text --region ${{ secrets.AWS_REGION }} \
+          )
+          USERPOOL_TOPIC_ARN=$( \
+            aws cloudformation describe-stacks --stack-name $SAFE_BRANCH_NAME-infrastructure --query 'Stacks[].Outputs[?OutputKey==`UserPoolEventsTopicArn`].[OutputValue]' --output text --region ${{ secrets.AWS_REGION }} \
+            || aws cloudformation describe-stacks --stack-name develop-infrastructure --query 'Stacks[].Outputs[?OutputKey==`UserPoolEventsTopicArn`].[OutputValue]' --output text --region ${{ secrets.AWS_REGION }} \
+          )
           # In this step we are setting variables and persistenting them
           # into the environment so that they can be utilized in other steps
           echo "::set-output name=branch::$SAFE_BRANCH_NAME"
+          echo "::set-output name=api_gateway_id::$API_GATEWAY_ID"
+          echo "::set-output name=tenant_topic_arn::$TENANTS_TOPIC_ARN"
+          echo "::set-output name=userpool_topic_arn::$USERPOOL_TOPIC_ARN"
           # Output variables to ensure their values are set correctly when ran
           echo "The region is ${{ secrets.AWS_REGION }}"
           echo "The branch is $SAFE_BRANCH_NAME"
@@ -58,4 +73,8 @@ jobs:
             --no-fail-on-empty-changeset \
             --parameter-overrides \
                 ApiGatewayStageName="staging" \
-                IsProduction="true"
+                IsProduction="true" \
+                ApiGatewayID=""${{ steps.vars.outputs.api_gateway_id }} \
+                TenantEventsTopic=""${{ steps.vars.outputs.tenant_topic_arn }} \
+                UserPoolEventsTopic=""${{ steps.vars.outputs.userpool_topic_arn }} \
+

@@ -13,11 +13,10 @@ Transform:
   - AWS::Serverless-2016-10-31
 
 Parameters:
-  ApiGatewayStageName:
-    Description: The name of the stage to which this Api Gateway will be deployed
+  ApiGatewayID:
+    Description: The name of the API Gateway to which this Api will be deployed
     Type: String
     AllowedPattern: .+
-    Default: staging
   IsProduction:
     Description: Whether this is a production stack
     Default: false
@@ -27,49 +26,24 @@ Parameters:
     Description: Authorizer for Update Tenant
     Default: false
     Type: String
+  TenantEventsTopic:
+    Type: String
+    AllowedPattern: .+
 
 Conditions:
   HasTenantUpdateAuth: !Not [!Equals [!Ref AuthTenantUpdate, "false"]]
   IsProduction: !Equals [!Ref IsProduction, "true"]
 
-Mappings:
-  ProductionMap:
-    eu-west-2:
-      HostedZone: bidmountain.com.
-      ACM: arn:aws:acm:us-east-1:221022921856:certificate/463f256f-5d74-4257-9e1a-18fa797ca411
-
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
-  TenantAPI:
-    Type: AWS::ApiGatewayV2::Api
-    Properties:
-      Name: !Join ["-", [!Ref "AWS::StackName", api]]
-      ProtocolType: HTTP
-  Deployment:
-    Type: AWS::ApiGatewayV2::Deployment
-    DependsOn:
-      - listTenantsRoute
-      - getTenantRoute
-      - updateTenantRoute
-      - createTenantRoute
-    Properties:
-      ApiId: !Ref TenantAPI
-  Stage:
-    Type: AWS::ApiGatewayV2::Stage
-    Properties:
-      AutoDeploy: true
-      StageName: !Ref ApiGatewayStageName
-      Description: Prod Stage
-      ApiId: !Ref TenantAPI
-
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
   listTenantsRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref TenantAPI
-      RouteKey: GET /
+      ApiId: !Ref ApiGatewayID
+      RouteKey: GET /tenants
       AuthorizationType: None
       OperationName: listTenantsRoute
       Target: !Join
@@ -80,7 +54,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       PayloadFormatVersion: '2.0'
-      ApiId: !Ref TenantAPI
+      ApiId: !Ref ApiGatewayID
       Description: Connect Integration
       IntegrationType: AWS_PROXY
       IntegrationUri:
@@ -114,8 +88,8 @@ Resources:
   getTenantRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref TenantAPI
-      RouteKey: GET /{tenantUuid}
+      ApiId: !Ref ApiGatewayID
+      RouteKey: GET /tenants/{tenantUuid}
       AuthorizationType: NONE
       OperationName: getTenantRoute
       Target: !Join
@@ -126,7 +100,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       PayloadFormatVersion: '2.0'
-      ApiId: !Ref TenantAPI
+      ApiId: !Ref ApiGatewayID
       Description: Connect Integration
       IntegrationType: AWS_PROXY
       IntegrationUri:
@@ -160,8 +134,8 @@ Resources:
   updateTenantRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref TenantAPI
-      RouteKey: PATCH /{tenantUuid}
+      ApiId: !Ref ApiGatewayID
+      RouteKey: PATCH /tenants/{tenantUuid}
       AuthorizationType: !If [HasTenantUpdateAuth, JWT, None]
       AuthorizerId: !If [HasTenantUpdateAuth, !Ref AuthTenantUpdate, !Ref AWS::NoValue]
       OperationName: updateTenantRoute
@@ -173,7 +147,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       PayloadFormatVersion: '2.0'
-      ApiId: !Ref TenantAPI
+      ApiId: !Ref ApiGatewayID
       Description: Connect Integration
       IntegrationType: AWS_PROXY
       IntegrationUri:
@@ -207,8 +181,8 @@ Resources:
   createTenantRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
-      ApiId: !Ref TenantAPI
-      RouteKey: POST /
+      ApiId: !Ref ApiGatewayID
+      RouteKey: POST /tenants/
       AuthorizationType: None
       OperationName: createTenantRoute
       Target: !Join
@@ -219,7 +193,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       PayloadFormatVersion: '2.0'
-      ApiId: !Ref TenantAPI
+      ApiId: !Ref ApiGatewayID
       Description: Connect Integration
       IntegrationType: AWS_PROXY
       IntegrationUri:
@@ -262,146 +236,3 @@ Resources:
           KeyType: "HASH"
       BillingMode: PAY_PER_REQUEST
       TableName: !Join ["-", [!Ref "AWS::StackName", "tenant-table"]]
-
-  DNSRecordIPV4:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      AliasTarget:
-        DNSName: !GetAtt [CloudfrontDistribution, DomainName]
-        HostedZoneId: Z2FDTNDATAQYW2
-      HostedZoneName: !FindInMap [ProductionMap, !Ref "AWS::Region", HostedZone]
-      Name:
-        !Join [
-          ".",
-          [
-            !Ref "AWS::StackName",
-            "bidmountain.com",
-          ],
-        ]
-      Type: A
-
-  DNSRecordIPV6:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      AliasTarget:
-        DNSName: !GetAtt [CloudfrontDistribution, DomainName]
-        HostedZoneId: Z2FDTNDATAQYW2
-      HostedZoneName: !FindInMap [ProductionMap, !Ref "AWS::Region", HostedZone]
-      Name:
-        !Join [
-          ".",
-          [
-            !Ref "AWS::StackName",
-            "bidmountain.com",
-          ],
-        ]
-      Type: AAAA
-
-  CloudfrontDistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Comment: !Join ["", [!Ref "AWS::StackName", " Cloud Front"]]
-        Origins:
-          - Id: APIGOrigin
-            DomainName:
-              !Join [
-                "",
-                [
-                  !Ref TenantAPI,
-                  ".execute-api.",
-                  !Ref AWS::Region,
-                  ".amazonaws.com",
-                ],
-              ]
-            OriginPath: !Sub /${ApiGatewayStageName}
-            CustomOriginConfig:
-              HTTPSPort: 443
-              OriginProtocolPolicy: https-only
-        HttpVersion: http2
-        DefaultCacheBehavior:
-          AllowedMethods:
-            ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-          CachedMethods: ["GET", "HEAD", "OPTIONS"]
-          ForwardedValues:
-            Headers:
-              - Access-Control-Request-Headers
-              - Access-Control-Request-Method
-              - Origin
-              - Authorization
-              - Accept
-            # - Host APIG needs to use SNI
-            QueryString: true
-          TargetOriginId: APIGOrigin
-          ViewerProtocolPolicy: https-only
-          Compress: true
-          DefaultTTL: 0
-        Enabled: true
-        IPV6Enabled: true
-        Aliases:
-          - !Join [
-              ".",
-              [
-                !Ref "AWS::StackName",
-                "bidmountain.com",
-              ],
-            ]
-        PriceClass: PriceClass_100
-        ViewerCertificate:
-          AcmCertificateArn:
-            !FindInMap [ProductionMap, !Ref "AWS::Region", ACM]
-          MinimumProtocolVersion: TLSv1.2_2019
-          SslSupportMethod: sni-only
-
-  TenantEventsTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      TopicName: !Join ["-", [!Ref "AWS::StackName", "tenant-events"]]
-
-  TenantEventsTopicPolicy:
-      Type: AWS::SNS::TopicPolicy
-      Properties:
-        Topics:
-          - !Ref TenantEventsTopic
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Sid: allow-sns
-            Effect: Allow
-            Principal: '*'
-            Action:
-              - SNS:Publish
-              - SNS:RemovePermission
-              - SNS:SetTopicAttributes
-              - SNS:DeleteTopic
-              - SNS:ListSubscriptionsByTopic
-              - SNS:GetTopicAttributes
-              - SNS:Receive
-              - SNS:AddPermission
-              - SNS:Subscribe
-            Resource: "*"
-
-Outputs:
-  ApiId:
-    Description: "Api Gateway ID"
-    Value: !Ref TenantAPI
-
-  TenantEventsTopicArn:
-    Description: "Tenant Events Topic ARN"
-    Value: !Ref TenantEventsTopic
-
-  TenantEventsTopicName:
-    Description: "Tenant Events Topic Name"
-    Value: !GetAtt TenantEventsTopic.TopicName
-
-  WebEndpoint:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Join [
-       "",
-      [
-        !Ref TenantAPI,
-        ".execute-api.",
-        !Ref AWS::Region,
-        ".amazonaws.com",
-      ],
-    ]
