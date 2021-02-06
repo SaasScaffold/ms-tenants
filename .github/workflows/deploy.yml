@@ -70,6 +70,7 @@ jobs:
             --stack-name "${{ steps.vars.outputs.branch }}-tenants" \
             --capabilities CAPABILITY_NAMED_IAM \
             --no-fail-on-empty-changeset \
+            --template ./.aws-sam/build/template.yml
             --parameter-overrides \
                 IsProduction="true" \
                 ApiGatewayID=""${{ steps.vars.outputs.api_gateway_id }} \
