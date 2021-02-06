@@ -1,3 +1,5 @@
+const { updateTenantAuthAttributes } = require('../helpers/tenantHelper')
+
 const processUserPoolEvent = async ({ body }) => {
   console.info('Processing record', body)
   const parsedBody = JSON.parse(body)
@@ -8,8 +10,10 @@ const processUserPoolEvent = async ({ body }) => {
     console.info('Unrecognised action: ', parsedBody.action)
     return null
   }
-  console.log('received', parsedBody)
-  return parsedBody
+  console.info('received', parsedBody)
+  const updatedTenant = await updateTenantAuthAttributes(parsedBody.tenant.name, parsedBody.userPoolId, parsedBody.userPoolClientId)
+  console.info('Updated Tenant', updatedTenant)
+  return updatedTenant
 }
 
 const handler = async event => {

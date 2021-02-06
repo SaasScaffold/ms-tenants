@@ -55,3 +55,28 @@ exports.createTenant = async (name, adminEmail) => {
   const createdTenantRecord = await ddb.get(getParams).promise()
   return createdTenantRecord.Item
 }
+
+exports.updateTenantAuthAttributes = async (name, userPoolId, userPoolClientId) => {
+  const params = {
+    TableName: TENANT_TABLE,
+    Key: {
+      name
+    },
+    UpdateExpression: 'SET userPoolId = :userPoolId, userPoolClientId = :userPoolClientId',
+    ExpressionAttributeValues: {
+      ':userPoolId': userPoolId,
+      ':userPoolClientId': userPoolClientId
+    }
+  }
+
+  await ddb.update(params).promise()
+
+  const getParams = {
+    TableName: TENANT_TABLE,
+    Key: {
+      name
+    }
+  }
+  const updated = await ddb.get(getParams).promise()
+  return updated.Item
+}
