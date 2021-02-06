@@ -284,6 +284,9 @@ Resources:
       Queues:
         - !Ref UserPoolEventsQueue
 
+  DeadUserPoolEventQueue: 
+    Type: AWS::SQS::Queue
+
   TenantTable:
     Type: AWS::DynamoDB::Table
     Properties:
