@@ -19,7 +19,8 @@ exports.getTenant = async (uuid) => {
     TableName: TENANT_TABLE,
     Key: {
       uuid,
-    }
+    },
+    IndexName: 'tenantUuid'
   }
   const tenant = await ddb.get(params).promise()
   console.log('Tenant', tenant)
@@ -48,7 +49,7 @@ exports.createTenant = async (name, adminEmail) => {
   const getParams = {
     TableName: TENANT_TABLE,
     Key: {
-      uuid
+      name
     }
   }
   const createdTenantRecord = await ddb.get(getParams).promise()

@@ -237,7 +237,7 @@ Resources:
         - AttributeName: "name"
           KeyType: "HASH"
       GlobalSecondaryIndexes:
-        - IndexName: "clientUuid"
+        - IndexName: "tenantUuid"
           KeySchema:
             - AttributeName: "uuid"
               KeyType: "HASH"
