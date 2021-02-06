@@ -59,12 +59,10 @@ jobs:
           # Output variables to ensure their values are set correctly when ran
           echo "The region is ${{ secrets.AWS_REGION }}"
           echo "The branch is $SAFE_BRANCH_NAME"
-      - name: SAM Build
+      - name: SAM Build & Deploy
         run: |
           yarn
           NODE_ENV=production yarn build
-      - name: SAM Deploy
-        run: |
           sam deploy \
             --s3-bucket zj-cloudformation-templates \
             --region ${{ secrets.AWS_REGION }} \
