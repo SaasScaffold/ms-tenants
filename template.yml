@@ -29,6 +29,9 @@ Parameters:
   TenantEventsTopic:
     Type: String
     AllowedPattern: .+
+  UserPoolEventsTopic:
+    Type: String
+    AllowedPattern: .+
 
 Conditions:
   HasTenantUpdateAuth: !Not [!Equals [!Ref AuthTenantUpdate, "false"]]
@@ -224,6 +227,29 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref createTenantFunction
       Principal: apigateway.amazonaws.com
+
+  ProcessUserPoolEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: processUserPoolEvent.handler
+      MemorySize: 128
+      Runtime: nodejs14.x
+      Timeout: 5
+      Events:
+        Event:
+          Type: SQS
+          Properties:
+            BatchSize: 1
+            Queue: !GetAtt UserPoolEventsQueue.Arn
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+          TENANT_TABLE: !Ref TenantTable
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the TenantTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TenantTable
 
   TenantTable:
     Type: AWS::DynamoDB::Table
