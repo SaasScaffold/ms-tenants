@@ -38,7 +38,9 @@ exports.createTenant = async (name, adminEmail) => {
       adminEmail
     },
     ConditionExpression: 'attribute_not_exists(#n)',
-    ExpressionAttributeNames: '{"#n": "name"}'
+    ExpressionAttributeNames: {
+      '#n': 'name'
+    }
   }
 
   await ddb.put(params).promise()
