@@ -251,6 +251,39 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref TenantTable
 
+  UserPoolEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn: 
+          Fn::GetAtt: 
+            - "DeadUserPoolEventsQueue"
+            - "Arn"
+        maxReceiveCount: 5
+      VisibilityTimeout: 5
+
+  UserPoolEventsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt UserPoolEventsQueue.Arn
+      Protocol: sqs
+      RawMessageDelivery: true
+      TopicArn: !Ref UserPoolEventsTopic
+
+  UserPoolEventsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: allow-sns-messages
+            Effect: Allow
+            Principal: '*'
+            Action: SQS:*
+            Resource: !GetAtt UserPoolEventsQueue.Arn
+      Queues:
+        - !Ref UserPoolEventsQueue
+
   TenantTable:
     Type: AWS::DynamoDB::Table
     Properties:
