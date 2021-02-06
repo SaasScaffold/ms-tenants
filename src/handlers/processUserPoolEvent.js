@@ -11,7 +11,7 @@ const processUserPoolEvent = async ({ body }) => {
     return null
   }
   console.info('received', parsedBody)
-  const updatedTenant = await updateTenantAuthAttributes(parsedBody.data.tenant.name, parsedBody.data.userPoolId, parsedBody.data.userPoolClientId)
+  const updatedTenant = await updateTenantAuthAttributes(parsedBody.data.tenant.name, parsedBody.data.userPoolId, parsedBody.data.userPoolClient)
   console.info('Updated Tenant', updatedTenant)
   return updatedTenant
 }
