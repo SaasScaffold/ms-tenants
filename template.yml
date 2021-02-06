@@ -65,7 +65,7 @@ Resources:
     Properties:
       CodeUri: src/handlers/
       Handler: listTenants.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       MemorySize: 128
       Timeout: 5
       Description: Lists the tenants
@@ -111,7 +111,7 @@ Resources:
     Properties:
       CodeUri: src/handlers/
       Handler: getTenant.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       MemorySize: 128
       Timeout: 5
       Description: Gets the specified tenant
@@ -158,7 +158,7 @@ Resources:
     Properties:
       CodeUri: src/handlers/
       Handler: updateTenant.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       MemorySize: 128
       Timeout: 5
       Description: Lists the default content keys and values for the specified namespace
@@ -202,9 +202,9 @@ Resources:
   createTenantFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/createTenant/
-      Handler: app.handler
-      Runtime: nodejs12.x
+      CodeUri: src/handlers/
+      Handler: createTenant.handler
+      Runtime: nodejs14.x
       MemorySize: 128
       Timeout: 5
       Description: Creates a tenant

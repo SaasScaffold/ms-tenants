@@ -73,7 +73,7 @@ jobs:
             --template ./.aws-sam/build/template.yml \
             --parameter-overrides \
                 IsProduction="true" \
-                ApiGatewayID=""${{ steps.vars.outputs.api_gateway_id }} \
-                TenantEventsTopic=""${{ steps.vars.outputs.tenant_topic_arn }} \
-                UserPoolEventsTopic=""${{ steps.vars.outputs.userpool_topic_arn }} \
+                ApiGatewayID="${{ steps.vars.outputs.api_gateway_id }}" \
+                TenantEventsTopic="${{ steps.vars.outputs.tenant_topic_arn }}" \
+                UserPoolEventsTopic="${{ steps.vars.outputs.userpool_topic_arn }}" \
 
