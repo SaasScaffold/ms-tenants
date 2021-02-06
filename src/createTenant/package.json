@@ -1,0 +1,11 @@
+{
+  "name": "create-tenant",
+  "version": "1.0.0",
+  "description": "createTenant method for ms-tenants",
+  "main": "src/app.js",
+  "author": "SAM CLI",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.434.0"
+  }
+}

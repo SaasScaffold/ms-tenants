@@ -27,6 +27,7 @@ module.exports = {
   externals: [
     'aws-sdk',
     'aws-sdk/clients/dynamodb',
+    'aws-sdk/clients/sns',
     'aws-sdk/clients/sqs',
     'aws-sdk/clients/apigatewaymanagementapi'
   ],
