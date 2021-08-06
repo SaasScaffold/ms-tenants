@@ -59,10 +59,12 @@ jobs:
           # Output variables to ensure their values are set correctly when ran
           echo "The region is ${{ secrets.AWS_REGION }}"
           echo "The branch is $SAFE_BRANCH_NAME"
-      - name: SAM Build & Deploy
+      - name: SAM Build
         run: |
           yarn
           NODE_ENV=production yarn build
+      - name: SAM Deploy
+        run: |
           sam --version
           sam deploy \
             --s3-bucket saas-scaffold-cloudformation-templates \
@@ -70,7 +72,6 @@ jobs:
             --stack-name "${{ steps.vars.outputs.branch }}-tenants" \
             --capabilities CAPABILITY_NAMED_IAM \
             --no-fail-on-empty-changeset \
-            --template ./.aws-sam/build/template.yml \
             --parameter-overrides \
                 IsProduction="true" \
                 ApiGatewayID="${{ steps.vars.outputs.api_gateway_id }}" \
