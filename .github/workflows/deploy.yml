@@ -65,7 +65,7 @@ jobs:
           NODE_ENV=production yarn build
           sam --version
           sam deploy \
-            --s3-bucket zj-cloudformation-templates \
+            --s3-bucket saas-scaffold-cloudformation-templates \
             --region ${{ secrets.AWS_REGION }} \
             --stack-name "${{ steps.vars.outputs.branch }}-tenants" \
             --capabilities CAPABILITY_NAMED_IAM \
